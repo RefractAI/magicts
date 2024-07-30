@@ -1,0 +1,2 @@
+export const ZoneNames = ['Field','Hand','Library','Graveyard','Exile','Stack','FastStack','Player','Emblem','AbilityHolding','TokenHolding','Removed'] as const;
+export type ZoneName = typeof ZoneNames[number];

@@ -1,0 +1,2 @@
+export const PhaseNames = ['Upkeep','Untap','Draw','FirstMain','BeginCombat','DeclareAttackers','DeclareBlockers','OrderBlockers','Combat','EndCombat','SecondMain','EndStep','Cleanup'] as const;
+export type PhaseName = typeof PhaseNames[number];
