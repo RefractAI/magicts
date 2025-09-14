@@ -1,6 +1,7 @@
 import { controller } from "../Network/Server"
+import { EmptyCost } from "../Types/CostTypes"
 import { CardId } from "../Types/IdCounter"
-import { GetCard } from "./GetCard"
+import { GetCard, GetPlayers } from "./GetCard"
 
 export const ClearTempState = () =>
 {
@@ -16,27 +17,45 @@ export const ClearTempState = () =>
         })
 }
 
+export const ClearEndOfTurnState = () =>
+{
+    GetPlayers().forEach(p =>
+        {
+            p.cardsDrawnThisTurn = 0
+            p.spellsCastThisTurn = 0
+            p.gainedLifeThisTurn = 0
+            p.lostLifeThisTurn = 0
+            p.cardsEnteredThisTurn = []
+        })
+    
+    // Clear enteredThisTurn for all cards
+    controller.cards.forEach(c =>
+        {
+            c.enteredThisTurn = false
+        })
+}
+
 export const ClearCastState = (cardId:CardId) =>
 {
     const card = GetCard(cardId)
     card.castPhase = 'None'
-    card.castSelectedCost = undefined
-    card.castSelectedOption = undefined
+    card.castSelectedCost = EmptyCost
+    card.castSelectedAbilities = []
+    card.castSelectedEffects = []
+    card.castSelectedName = card.name
     //keep X
 }
 
-export const ClearFieldState = (cardId:CardId) =>
+export const ClearCardZoneState = (cardId:CardId) =>
 {
     const card = GetCard(cardId)
-    card.abilityTypes = []
-    card.abilitySourceAbilityId = undefined
-    card.abilitySourceId = undefined
-    card.abilitySourceSourceIds = undefined
+    card.printedAbilities = []
     card.attacking = undefined
     card.blocking = []
     card.blockOrder = []
     card.counters = []
     card.effects = []
     card.damageMarked = 0
+    card.revealed = false
     //keep X
 }

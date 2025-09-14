@@ -1,0 +1,2 @@
+export const CastPhaseNames = ['None','ChooseX','ChooseTargets','DivideTargets','DetermineCost','DetermineCostChooseTargets','BeforePayCost','PayCost','PayCostDoEffects','BeforeResolve','CheckForIllegalTargets','ToResolveDoEffects','Resolved'] as const;
+export type CastPhaseName = typeof CastPhaseNames[number];

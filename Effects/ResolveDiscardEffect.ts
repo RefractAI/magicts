@@ -1,5 +1,5 @@
-import { DiscardEffect } from "../Types/EffectClass";
-import { Effect } from "../Types/Types";
+import { DiscardEffect } from "../Types/EffectTypes";
+import { Effect } from "../Types/EffectTypes";
 import { EvaluateNumber, GetConditionCards } from "../Logic/Evaluate";
 import { ExecuteTrigger } from "../Logic/ExecuteTrigger";
 import { PlayerId } from "../Types/IdCounter";
@@ -10,21 +10,31 @@ export const ResolveDiscardEffect = ({source,effectIndex,context}: Effect, {disc
 
     var i=0
     const {targets,discardTargetIds} = context
+    
     for(var target of targets[0])
     {
         i++
         
         if(!discardTargetIds || !discardTargetIds[i])
         {
-            const allowed = GetConditionCards(target as PlayerId,discardTarget,context)
+            const allowed = GetConditionCards(source,discardTarget,context,false)
             const min = EvaluateNumber(target,target,discardTarget.min,context)
             const max = EvaluateNumber(target,target,discardTarget.min,context)
-            AddChooseInputGameAction(target as PlayerId,"Select targets",source,min,max,allowed,effectIndex,'discardTargetIds',i)
-            return false;
+            if(allowed.length > max && !discardTarget.all)
+            {
+                AddChooseInputGameAction(target as PlayerId,"Select targets",source,min,max,allowed,effectIndex,'discardTargetIds',i)
+                return false;
+            }
+            else
+            {
+                AddChangeZoneGameAction("Graveyard", allowed, source, 'DiscardEffect')
+                ExecuteTrigger('Discard', allowed)
+                return true;
+            }
         }
         else
         {
-            AddChangeZoneGameAction("Graveyard", discardTargetIds[i], source)
+            AddChangeZoneGameAction("Graveyard", discardTargetIds[i], source, 'DiscardEffect')
             ExecuteTrigger('Discard', [target])
             return true;
         }    

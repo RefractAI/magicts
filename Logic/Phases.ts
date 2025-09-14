@@ -1,4 +1,4 @@
-import { controller } from "../Network/Server";
+import { controller, isTestMode } from "../Network/Server";
 import { AddBucketInputGameAction, AddPairInputGameAction } from "../Types/InputTypesHelpers";
 import { PlayerId } from "../Types/IdCounter";
 import { IsTribe } from "../Types/IsCard";
@@ -8,9 +8,13 @@ import { CanAttack, CanBlock } from "./CanAttack";
 import { ExecuteTrigger } from "./ExecuteTrigger";
 import { PerformDrawCard, PerformCombat, PerformUntap } from "./MutateBoard";
 import { BucketInputBucket } from "../Types/InputTypes";
+import { ClearEndOfTurnState } from "./ClearState";
 
 export const BeginPhase = () =>
 {
+    console.log("BeginPhase: ",controller.phase)
+    controller.activePlayerPassed = false
+    controller.nonActivePlayerPassed = false
     CalculateAbilities()
     switch(controller.phase)
     {
@@ -36,6 +40,7 @@ export const NextPhase = () =>
     if(controller.phase == 'Cleanup')
     {
         controller.active = (controller.active === 1 ? 2 : 1) as PlayerId
+        ClearEndOfTurnState()
         controller.phase = 'Upkeep'
     }
     else
@@ -55,18 +60,24 @@ export const NextPhase = () =>
 const UpkeepPhase = () =>
 {
     ExecuteTrigger("Upkeep",[controller.active])
+    controller.activePlayerPassed = true
+    controller.nonActivePlayerPassed = true
 }
 
 const UntapPhase = () =>
 {
     const tappedPermanents = controller.cards.filter(c => c.controller === controller.active && c.tapped)
     tappedPermanents.forEach(t => PerformUntap(t.id))
+    controller.activePlayerPassed = true
+    controller.nonActivePlayerPassed = true
 }
 
 const DrawPhase = () =>
 {
     PerformDrawCard(controller.active)
     ExecuteTrigger("DrawStep",[controller.active])
+    controller.activePlayerPassed = true
+    controller.nonActivePlayerPassed = true
 }
 
 const FirstMainPhase = () =>
@@ -83,21 +94,36 @@ const DeclareAttackersPhase = () =>
 {
     const canAttack = controller.cards.filter(c => c.controller === controller.active && CanAttack(c.id)).map(c => c.id)
     const defenders = controller.cards.filter(c => c.controller !== controller.active && (IsTribe(c,'Player') || IsTribe(c,'Planeswalker') || IsTribe(c,'Battle'))).map(c => c.id)
+    
+    // Find creatures that must attack (AttacksEachCombatIfAble)
+    const mustAttack = controller.cards.filter(c => 
+        c.controller === controller.active && 
+        CanAttack(c.id) && 
+        c.keywords.includes('AttacksEachCombatIfAble')
+    ).map(c => c.id)
+    
     if(canAttack.length > 0)
     {
-        AddPairInputGameAction(controller.active,"Choose attackers",controller.active,canAttack,defenders, "Attackers")
+        AddPairInputGameAction(
+            controller.active,
+            "Choose attackers",
+            controller.active,
+            canAttack,
+            defenders,
+            "Attackers",
+            mustAttack, // requiredFroms - these creatures must attack something
+            [], // requiredTos - no specific defenders must be attacked
+            [] // requiredPairs - no specific attacker/defender combinations required
+        )
     }
     else
     {
-        console.log("NO VALID ATTACKERS")
+        if (!isTestMode) console.log("NO VALID ATTACKERS")
     }
 }
 
 const DeclareBlockersPhase = () =>
 {
-
-    console.log("NO VALID BLOCKERS")
-
     const attackers = controller.cards.filter(c => c.attacking)
     const canBlock = controller.cards.filter(c => c.controller !== controller.active && attackers.some(attacker => CanBlock(attacker.id,c.id))).map(c => c.id)
     if(canBlock.length > 0)
@@ -106,7 +132,7 @@ const DeclareBlockersPhase = () =>
     }
     else
     {
-        console.log("NO VALID BLOCKERS")
+        if (!isTestMode) console.log("NO VALID BLOCKERS")
     }
 }
 
@@ -126,6 +152,8 @@ const OrderBlockersPhase = () =>
             }
             else
             {
+                controller.activePlayerPassed = true;
+                controller.nonActivePlayerPassed = true;
                 attacker.blockOrder = blockers.map(b => b.id)
             }
         
@@ -137,6 +165,8 @@ const CombatPhase = (firstStrike:boolean) =>
 {
     ExecuteTrigger("Combat",[controller.active])
     PerformCombat(firstStrike)
+    controller.activePlayerPassed = true
+    controller.nonActivePlayerPassed = true
 }
 
 const EndCombatPhase = () =>
@@ -149,6 +179,8 @@ const EndCombatPhase = () =>
         })
    
     ExecuteTrigger("EndCombat",[controller.active])
+    controller.activePlayerPassed = true
+    controller.nonActivePlayerPassed = true
 }
 
 const SecondMainPhase = () =>
@@ -163,5 +195,6 @@ const EndStepPhase = () =>
 
 const CleanupPhase = () =>
 {
-
+    controller.activePlayerPassed = true
+    controller.nonActivePlayerPassed = true
 }

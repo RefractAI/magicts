@@ -3,9 +3,11 @@ import { GetAbilityText } from "../Types/GetText";
 import { ClientInputRespond } from "../Network/Client";
 import { CardId } from "../Types/IdCounter";
 import { InputUnion } from "../Types/InputTypes";
-import { Controller, Selectable } from "../Types/Types";
+import { Controller } from "../Types/CardTypes";
+import { Selectable } from "../Types/UITypes";
+import { GetCastModeSummary } from "../Types/OptionTypes";
 
-export function CardClick(id: CardId, selectable: Selectable, input: InputUnion, selected: CardId[], setSelected: (selected: CardId[]) => void, context: Controller, setContext: (context: Controller) => void, setButtons: (buttons: string[]) => void, setInput: (input: InputUnion) => void): void {
+export function CardClick(id: CardId, selectable: Selectable, input: InputUnion, selected: CardId[], setSelected: (selected: CardId[]) => void, context: Controller, setContext: (context: Controller) => void, setButtons: (buttons: string[]) => void, setInput: (input: InputUnion) => void, isHoldingPriority: boolean): void {
   const card = ClientGetCard(id);
   const playerId = context.active2;
   switch (input.name) {
@@ -17,15 +19,69 @@ export function CardClick(id: CardId, selectable: Selectable, input: InputUnion,
         if (castingOptions.length === 0) {
           throw 'uncastable - ' + id;
         }
-        if (castingOptions.length == 1) {
+        
+        // Check if we need to show cast mode selection
+        const needsModeSelection = castingOptions.length === 1 && !castingOptions[0].abilityTypeId && 
+          (card.options.length > 1 || (card.options.length === 1 && card.options[0].length > 0));
+        
+        console.log(`CardClick debug for ${card.name}:`, {
+          castingOptionsLength: castingOptions.length,
+          hasAbilityTypeId: castingOptions[0]?.abilityTypeId,
+          optionsLength: card.options.length,
+          firstOptionLength: card.options[0]?.length,
+          needsModeSelection,
+          options: card.options
+        });
+        
+        if (castingOptions.length === 1 && !needsModeSelection) {
+          // Single option, no mode selection needed
           input.response = castingOptions[0];
-          ClientInputRespond(input.response, setContext, setInput);
-        }
-
-        else {
-          //More than one option, cast or activate ability
+          ClientInputRespond('CastInput', input.response, setContext, setInput, !isHoldingPriority);
+        } else if (needsModeSelection) {
+          // Single spell casting option but multiple cast modes - show mode selection
           setSelected([id]);
-          setButtons(castingOptions.map(c => c.abilityTypeId ? GetAbilityText(c.abilityTypeId) : ClientGetCard(c.cardId!).name));
+          const modeButtons = [];
+          
+          // Add normal cast option if available
+          if (card.options.length === 0 || card.options.some(optionGroup => optionGroup.length === 0)) {
+            modeButtons.push(`${card.name} (Normal cast)`);
+          }
+          
+          // Add cast mode options
+          card.options.forEach((optionGroup, _index) => {
+            if (optionGroup.length > 0) {
+              // Special handling for split cards - show individual sides
+              if (optionGroup.length === 1 && optionGroup[0].optionType === 'Split' && optionGroup[0].cardName) {
+                modeButtons.push(`Cast ${optionGroup[0].cardName}`);
+              } else if (optionGroup.length === 1 && optionGroup[0].optionType === 'Transform' && optionGroup[0].cardName) {
+                modeButtons.push(`Transform to ${optionGroup[0].cardName}`);
+              } else {
+                const castModeText = GetCastModeSummary(optionGroup);
+                modeButtons.push(`${card.name} (${castModeText})`);
+              }
+            }
+          });
+          
+          console.log(`Generated mode buttons for ${card.name}:`, modeButtons);
+          setButtons(modeButtons);
+        } else {
+          // Multiple casting options (abilities vs spells) or complex combinations
+          setSelected([id]);
+          setButtons(castingOptions.map(c => {
+            if (c.abilityTypeId) {
+              return GetAbilityText(c.abilityTypeId);
+            } else {
+              // This is a casting option - show the cast mode summary
+              const cardName = ClientGetCard(c.cardId!).name;
+              if (c.chosenMode !== undefined) {
+                const card = ClientGetCard(c.cardId!);
+                const castModeOptions = card.options[c.chosenMode] || [];
+                const castModeText = GetCastModeSummary(castModeOptions);
+                return castModeOptions.length > 0 ? `${cardName} (${castModeText})` : cardName;
+              }
+              return cardName;
+            }
+          }));
         }
       }
 
@@ -39,7 +95,7 @@ export function CardClick(id: CardId, selectable: Selectable, input: InputUnion,
       switch (selectable) {
         case 'Allowed':
           if (input.min === 1 && input.max === 1) {
-            ClientInputRespond([id], setContext, setInput);
+            ClientInputRespond('ChooseInput', [id], setContext, setInput, !isHoldingPriority);
           }
 
           else {
@@ -99,18 +155,6 @@ export function CardClick(id: CardId, selectable: Selectable, input: InputUnion,
             setSelected([]); 
           }
         break;
-        default: console.log('Click not allowed for this card'); break;
-      }
-
-      break;
-
-    case 'BucketInput':
-
-      switch (selectable) {
-        case 'Allowed':
-          setSelected([...selected, id]);
-          break;
-        case 'Selected': setSelected(selected.filter(s => s !== id)); break;
         default: console.log('Click not allowed for this card'); break;
       }
 

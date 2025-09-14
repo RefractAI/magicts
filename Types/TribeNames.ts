@@ -2,8 +2,8 @@ export const SpecialTribeNames = ['Token','Player','Ability','SpellCopy','CardCo
 export const SuperTribeNames = ['Land','Creature','Instant','Sorcery','Planeswalker','Battle','Emblem','Artifact','Enchantment','Legendary'] as const;
 
 export const CreatureTribeNames = ['Kavu','Human','Phyrexian','Golem','Bear'
-,'Cleric','Artificer','Knight','Soldier'] as const;
-export const LandTribeNames = ['Plains','Island','Swamp','Mountain','Forest'] as const;
+,'Cleric','Artificer','Knight','Soldier','Siren','Pirate','Faerie','Rogue','Shaman','Wall','Eye','Horror','Bird','Construct','Spirit','Kor','Cat','Lhurgoyf','Angel','Merfolk','Wizard','Vampire','Advisor'] as const;
+export const LandTribeNames = ['Plains','Island','Swamp','Mountain','Forest','Rainbow'] as const;
 export const ArtifactTribeNames = ['Vehicle'] as const;
 
 export const TribeNames = [...SpecialTribeNames,...SuperTribeNames,...CreatureTribeNames,...LandTribeNames,...ArtifactTribeNames]

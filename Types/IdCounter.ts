@@ -10,3 +10,5 @@ export const newPlayerId = () => {idcounter++; return idcounter as PlayerId}
 export const newCardId = () => {idcounter++; return idcounter as CardId}
 export const newAbilityTypeId = () => {idcounter++; return idcounter as AbilityTypeId}
 export const newTimestamp = () => {idcounter++; return idcounter as Timestamp}
+
+export const resetIds = () => { idcounter = 1; }

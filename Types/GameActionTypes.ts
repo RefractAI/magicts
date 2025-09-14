@@ -1,7 +1,17 @@
 import { CardId } from "./IdCounter";
 import { InputUnion } from "./InputTypes";
-import { GameAction, NumberDef } from "./Types";
+import { NumberDef } from "./ConditionTypes";
 import { ZoneName } from "./ZoneNames";
+import { EffectUnion } from "./EffectTypes";
+
+export type GameActionName = 'None'|'InputAction'|'ChangeZoneAction'|'ReplacementEffectAction'
+
+export interface GameAction
+{
+    name:GameActionName,
+    priority:number,
+    cls:'GameAction'
+}
 
 export interface InputAction extends GameAction
 {
@@ -14,8 +24,16 @@ export interface ChangeZoneAction extends GameAction
     cardIds:CardId[],
     zoneTo:ZoneName,
     librarySpecification?:LibrarySpecification,
-    source:CardId
+    source:CardId,
+    reason:string,
     name:'ChangeZoneAction'
+}
+
+export interface ReplacementEffectAction extends GameAction
+{
+    source:CardId,
+    effects:EffectUnion[],
+    name:'ReplacementEffectAction'
 }
 
 export type LibraryDirection = 'Top'|'Bottom'
@@ -26,4 +44,4 @@ export interface LibrarySpecification
     offset:NumberDef
 }
 
-export type GameActionUnion = InputAction | ChangeZoneAction
+export type GameActionUnion = InputAction | ChangeZoneAction | ReplacementEffectAction

@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { Card, Selectable } from '../Types/Types';
+import { Card } from '../Types/CardTypes';
+import { Selectable } from '../Types/UITypes';
 import { UIContext } from './UIContext';
 import { CardClick } from "./CardClick";
 import { GetCardShortText } from '../Types/GetText';
@@ -7,7 +8,7 @@ import { GetCardShortText } from '../Types/GetText';
 export const CardComponent: React.FC<{ card: Card; }> = ({ card }) => {
 
   const { id, tapped } = card;
-  const { input, selected, setSelected, context, setContext, setInput, setHovered, setButtons } = useContext(UIContext)!;
+  const { input, selected, setSelected, context, setContext, setInput, setHovered, setButtons, isHoldingPriority } = useContext(UIContext)!;
   
   if (!input) { return; }
 
@@ -52,8 +53,9 @@ export const CardComponent: React.FC<{ card: Card; }> = ({ card }) => {
     <div className={`Card 
       ${card.controller === 1 ? 'Player' : 'Opponent'} ${tapped ? ' tapped' : ''} Selectable-${selectable}`}
       id={card.id.toString()}
-      onClick={() => { CardClick(id, selectable, input, selected, setSelected, context, setContext, setButtons, setInput); }}
+      onClick={() => { CardClick(id, selectable, input, selected, setSelected, context, setContext, setButtons, setInput, isHoldingPriority); }}
       onMouseEnter={() => setHovered(id)}
+      onMouseLeave={() => setHovered(null)}
     >
       <div>{GetCardShortText(card)}</div>
     </div>

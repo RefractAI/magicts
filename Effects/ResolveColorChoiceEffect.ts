@@ -1,5 +1,5 @@
-import { ColorChoiceEffect } from "../Types/EffectClass";
-import { Effect } from "../Types/Types";
+import { ColorChoiceEffect } from "../Types/EffectTypes";
+import { Effect } from "../Types/EffectTypes";
 import { PlayerId } from "../Types/IdCounter";
 import { AddButtonChooseInputGameAction } from "../Types/InputTypesHelpers";
 

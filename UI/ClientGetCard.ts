@@ -1,6 +1,6 @@
 import { clientState } from "../Network/Client"
 import { PlayerId, CardId } from "../Types/IdCounter"
-import { Player, Card } from "../Types/Types"
+import { Player, Card } from "../Types/CardTypes"
 
 export const ClientGetPlayer = (playerId:PlayerId):Player =>
 {
@@ -12,6 +12,8 @@ export const ClientGetPlayer = (playerId:PlayerId):Player =>
 export const ClientGetCard = (cardId:CardId):Card =>
 {
     const c = clientState.cards.find(c => c.id == cardId)! as Card
-    if(!c) {throw 'Card not found'+cardId}
+    if(!c) {
+        throw new Error('Card not found:'+cardId)
+    }
     return c
 }

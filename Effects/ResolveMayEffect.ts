@@ -1,19 +1,27 @@
-import { MayEffect } from "../Types/EffectClass";
-import { Effect } from "../Types/Types";
+import { MayEffect } from "../Types/EffectTypes";
+import { Effect } from "../Types/EffectTypes";
 import { AddBooleanInputGameAction } from "../Types/InputTypesHelpers";
 import { GetController } from "../Logic/GetCard";
 
-export const ResolveTapEffect = ({source,effectIndex,context}: Effect, _: MayEffect) => {
-
+export const ResolveMayEffect = (effect: Effect, _: MayEffect) => {
+    const {source,effectIndex,context} = effect;
     const {mayInput} = context
+    console.log("ResolveMayEffect called with mayInput:", mayInput, "context:", JSON.stringify(context, null, 2));
 
     if(mayInput === undefined)
     {
+        console.log("MayEffect requesting Boolean input");
         AddBooleanInputGameAction(GetController(source), "May?", source, effectIndex, 'mayInput')
         return false;
     }
 
-    //Theneffects chosen based on may value
+    console.log("MayEffect resolved with mayInput:", mayInput);
+    
+    // If the choice is "No", clear the selectedThenEffects so they won't be created
+    if(!mayInput) {
+        console.log("MayEffect choice was No, clearing selectedThenEffects");
+        effect.selectedThenEffects = [];
+    }
 
     return true;
 };

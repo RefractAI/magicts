@@ -2,7 +2,8 @@ import { AddInputGameAction } from "./GameActionHelpers"
 import { GetCostText } from "./GetText"
 import { PlayerId, CardId } from "./IdCounter"
 import { BucketInputBucket, InputKind } from "./InputTypes"
-import { ConditionContext, Cost, Option, ResolutionContext } from "./Types"
+import { ResolutionContext } from "./CardTypes"
+import { Cost } from "./CostTypes"
 
 export const AddCastInputGameAction = (source:PlayerId,allowed:CardId[]) =>
 {
@@ -33,20 +34,6 @@ export const AddPayInputGameAction = (playerId:PlayerId,source:CardId,allowed:Ca
     })
 }
 
-export const AddModeInputGameAction = (playerId:PlayerId,source:CardId,modes:Option[][]) =>
-{
-    AddInputGameAction({
-        name:'ModeInput'
-        , prompt:'Choose mode'
-        , modes
-        , response:0
-        , responded: false
-        , source
-        , playerId
-        , purpose:'Cast'
-    })
-}
-
 export const AddNumberInputGameAction = (playerId:PlayerId,source:CardId,min:number,max:number,sourceEffectIndex?:number,contextKey?:keyof ResolutionContext,contextKeyIndex?:number) =>
 {
     AddInputGameAction({
@@ -65,7 +52,7 @@ export const AddNumberInputGameAction = (playerId:PlayerId,source:CardId,min:num
     })
 }
 
-export const AddChooseInputGameAction = (playerId:PlayerId,prompt:string,source:CardId,min:number,max:number,allowed:CardId[],sourceEffectIndex?:number,contextKey?:keyof ResolutionContext,contextKeyIndex?:number) =>
+export const AddChooseInputGameAction = (playerId:PlayerId,prompt:string,source:CardId,min:number,max:number,allowed:CardId[],sourceEffectIndex?:number,contextKey?:keyof ResolutionContext,contextKeyIndex?:number,validationFunction?:string) =>
 {
     AddInputGameAction({
         name:'ChooseInput'
@@ -81,6 +68,7 @@ export const AddChooseInputGameAction = (playerId:PlayerId,prompt:string,source:
         , source
         , playerId
         , purpose:'Effect'
+        , validationFunction
     })
 }
 
@@ -117,13 +105,29 @@ export const AddButtonChooseInputGameAction = (playerId:PlayerId,prompt:string,s
     })
 }
 
-export const AddPairInputGameAction = (playerId:PlayerId,prompt:string,source:CardId,allowed:CardId[],toCards:CardId[],purpose:InputKind,sourceEffectIndex?:number,contextKey?:keyof ResolutionContext,contextKeyIndex?:number) =>
+export const AddPairInputGameAction = (
+    playerId:PlayerId,
+    prompt:string,
+    source:CardId,
+    allowed:CardId[],
+    toCards:CardId[],
+    purpose:InputKind,
+    requiredFroms:CardId[] = [],
+    requiredTos:CardId[] = [],
+    requiredPairs:[CardId,CardId][] = [],
+    sourceEffectIndex?:number,
+    contextKey?:keyof ResolutionContext,
+    contextKeyIndex?:number
+) =>
 {
     AddInputGameAction({
         name:'PairInput'
         , prompt
         , allowed
         , toCards
+        , requiredFroms
+        , requiredTos
+        , requiredPairs
         , sourceEffectIndex
         , contextKey
         , contextKeyIndex

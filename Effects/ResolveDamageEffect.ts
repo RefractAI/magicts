@@ -1,5 +1,5 @@
-import { DamageEffect } from "../Types/EffectClass";
-import { Effect } from "../Types/Types";
+import { DamageEffect } from "../Types/EffectTypes";
+import { Effect } from "../Types/EffectTypes";
 import { EvaluateNumber } from "../Logic/Evaluate";
 import { PerformDamage } from "../Logic/MutateBoard";
 

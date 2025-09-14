@@ -1,0 +1,2 @@
+export const KeywordNames = ['Flying','Menace','Deathtouch','Trample','Lifelink','Haste','Vigilance','Defender','FirstStrike','DoubleStrike','Hexproof','Flash','Indestructible','AttacksEachCombatIfAble','Ascend','MaySpendManaAsThoughItWereManaOfAnyColorToCastThisSpell'] as const
+export type KeywordName = typeof KeywordNames[number]

@@ -2,9 +2,9 @@ import { ClientGetCard } from "./ClientGetCard";
 import { ClientInputRespond } from "../Network/Client";
 import { CardId } from "../Types/IdCounter";
 import { InputUnion, CastInput, BucketInput } from "../Types/InputTypes";
-import { Controller } from "../Types/Types";
+import { Controller } from "../Types/CardTypes";
 
-export function ButtonClick(buttonNumber:number, input:InputUnion, selected:CardId[], setSelected:(selected:CardId[]) => void, context:Controller, setContext:(context:Controller) => void, _:string[], setButtons:(buttons:string[]) => void,setInput:(input:InputUnion) => void): void 
+export function ButtonClick(buttonNumber:number, input:InputUnion, selected:CardId[], setSelected:(selected:CardId[]) => void, context:Controller, setContext:(context:Controller) => void, _:string[], setButtons:(buttons:string[]) => void,setInput:(input:InputUnion) => void, isHoldingPriority: boolean): void 
 {
   const playerId = context.active2
   switch(input.name)
@@ -13,17 +13,50 @@ export function ButtonClick(buttonNumber:number, input:InputUnion, selected:Card
       case 'PayInput':
             const card = ClientGetCard(selected[0])
             const castingOptions = card.canCast.filter(c => c.playerId === playerId)
-            const selectedOption = castingOptions[buttonNumber]
-            input.response = ({playerId,cardId:selectedOption.cardId,abilityTypeId:selectedOption.abilityTypeId})
-            ClientInputRespond(input.response, setContext, setInput)
+            
+            // Check if we're in cast mode selection vs casting option selection
+            const needsModeSelection = castingOptions.length === 1 && !castingOptions[0].abilityTypeId && 
+              (card.options.length > 1 || (card.options.length === 1 && card.options[0].length > 0));
+            
+            if (needsModeSelection) {
+              // Handle cast mode selection
+              let chosenMode: number | undefined = buttonNumber;
+              
+              // If we have a "Normal cast" option, adjust the mode index
+              const hasNormalCastingOption = card.options.length === 0 || card.options.some(optionGroup => optionGroup.length === 0);
+              if (hasNormalCastingOption && buttonNumber === 0) {
+                chosenMode = undefined; // Normal cast, no specific mode
+              } else if (hasNormalCastingOption) {
+                chosenMode = buttonNumber - 1; // Adjust for normal cast option
+              }
+              
+              const selectedOption = castingOptions[0];
+              input.response = ({
+                playerId,
+                cardId: selectedOption.cardId,
+                abilityTypeId: selectedOption.abilityTypeId,
+                chosenMode
+              });
+            } else {
+              // Handle regular casting option selection (abilities vs spells)
+              const selectedOption = castingOptions[buttonNumber]
+              input.response = ({
+                playerId,
+                cardId: selectedOption.cardId,
+                abilityTypeId: selectedOption.abilityTypeId,
+                chosenMode: selectedOption.chosenMode
+              });
+            }
+            
+            ClientInputRespond('CastInput', input.response, setContext, setInput, !isHoldingPriority)
        
-            //More than one option, cast or activate ability
+            //Clear selection
             setButtons([])
             setSelected([])
 
         break;
       case 'ButtonChooseInput':
-        ClientInputRespond(buttonNumber, setContext, setInput)
+        ClientInputRespond('ButtonChooseInput', buttonNumber, setContext, setInput, !isHoldingPriority)
         break;
       default:
         console.log('Button not allowed in this event')
@@ -31,12 +64,12 @@ export function ButtonClick(buttonNumber:number, input:InputUnion, selected:Card
 }
 
 
-export function PassPriorityClick(input:CastInput,context:Controller,setContext:(context:Controller) => void,setInput:(input:InputUnion) => void)
+export function PassPriorityClick(_input:CastInput,context:Controller,setContext:(context:Controller) => void,setInput:(input:InputUnion) => void, isHoldingPriority: boolean = false)
 {
-  ClientInputRespond(({playerId:context.active2,cardId:null,abilityId:null}), setContext, setInput)
+  ClientInputRespond('CastInput', ({playerId:context.active2,cardId:null,abilityTypeId:null}), setContext, setInput, !isHoldingPriority)
 }
 
-export function AcceptClick(selected:CardId[],input:InputUnion,setContext:(context:Controller) => void,setInput:(input:InputUnion) => void)
+export function AcceptClick(selected:CardId[],input:InputUnion,setContext:(context:Controller) => void,setInput:(input:InputUnion) => void, isHoldingPriority: boolean = false)
 {
   //Validate
   var valid = true;
@@ -95,7 +128,7 @@ export function AcceptClick(selected:CardId[],input:InputUnion,setContext:(conte
 
   if(valid)
   {
-    ClientInputRespond(input.response, setContext, setInput)
+    ClientInputRespond(input.name as any, input.response, setContext, setInput, !isHoldingPriority)
   }
 }
 
@@ -157,7 +190,7 @@ function moveCardLeft(
   const newArr = [
     ...newSelectedCardArr.slice(0, selectedCardIdx - 1),
     selectedCardId,
-    ...newSelectedCardArr.slice(selectedCardIdx -1 ),
+    ...newSelectedCardArr.slice(selectedCardIdx - 1),
   ];
 
   return [

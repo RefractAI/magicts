@@ -1,5 +1,5 @@
-import { TapEffect } from "../Types/EffectClass";
-import { Effect } from "../Types/Types";
+import { TapEffect } from "../Types/EffectTypes";
+import { Effect } from "../Types/EffectTypes";
 import { PerformTap } from "../Logic/MutateBoard";
 
 export const ResolveTapEffect = (effect: Effect, _: TapEffect) => {

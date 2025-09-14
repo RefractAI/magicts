@@ -1,5 +1,8 @@
 import { TribeName } from "./TribeNames"
-import { Card, Color, CounterType, KeywordName } from "./Types"
+import { Card } from "./CardTypes"
+import { Color } from "./ColorTypes"
+import { CounterType } from "./CounterTypes"
+import { KeywordName } from "./KeywordTypes"
 
 export const IsTribe = (card:Card,tribe:TribeName):boolean => card.tribes.some(t => t === tribe)
 export const IsColor = (card:Card,color:Color):boolean => card.colors.some(c => c === color)
@@ -22,6 +25,7 @@ export const IsSorcery = (c:Card):boolean => IsTribe(c, "Sorcery")
 export const IsArtifact = (c:Card):boolean => IsTribe(c, "Artifact")
 export const IsEnchantment = (c:Card):boolean => IsTribe(c, "Enchantment")
 export const IsBattle = (c:Card):boolean => IsTribe(c, "Battle")
+export const IsLand = (c:Card):boolean => IsTribe(c, "Land")
 
 export const IsPlayer = (c:Card):boolean => IsTribe(c, "Player")
 export const IsPlaneswalker = (c:Card):boolean => IsTribe(c, "Planeswalker")

@@ -1,0 +1,45 @@
+import { LightningBoltTest } from "../Cards/LightningBolt";
+import { AdelineResplendentCatharTest } from "../Cards/AdelineResplendentCathar";
+import { BladeSplicerTest } from "../Cards/BladeSplicer";
+import { BenevolentBodyguardTest } from "../Cards/BenevolentBodyguard";
+import { BirdsofParadiseTest } from "../Cards/BirdsofParadise";
+import { CatharCommandoTest } from "../Cards/CatharCommando";
+import { SpyglassSirenTest } from "../Cards/SpyglassSiren";
+import { FaerieMastermindTest } from "../Cards/FaerieMastermind";
+import { DragonsRageChannelerTest } from "../Cards/DragonsRageChanneler";
+import { ConcealingCurtainsTest } from "../Cards/ConcealingCurtains";
+import { SimicSignetTest } from "../Cards/SimicSignet";
+import { DemonicTutorTest } from "../Cards/DemonicTutor";
+import { GoblinBombardmentTest } from "../Cards/GoblinBombardment";
+import { ThoughtseizeTest } from "../Cards/Thoughtseize";
+import { WalkingBallistaTest } from "../Cards/WalkingBallista";
+import { DescendantofStormsTest } from "../Cards/DescendantofStorms";
+import { GiverofRunesTest } from "../Cards/GiverofRunes";
+import { MotherofRunesTest } from "../Cards/MotherofRunes";
+import { OcelotPrideTest } from "../Cards/OcelotPride";
+import { NethergoyfTest } from "../Cards/Nethergoyf";
+import { FireIceTest } from "../Cards/FireIce";
+import { ToxicDelugeTest } from "../Cards/ToxicDeluge";
+import { ThaliaGuardianofThrabenTest } from "../Cards/ThaliaGuardianofThraben";
+import { GuideofSoulsTest } from "../Cards/GuideofSouls";
+import { FloodpitsDrownerTest, StunCounterReplacementTest } from "../Cards/FloodpitsDrowner";
+import { DarkConfidantTest } from "../Cards/DarkConfidant";
+import { FactorFictionTest } from "../Cards/FactorFiction";
+import { AbradeTest } from "../Cards/Abrade";
+import { AbruptDecayTest } from "../Cards/AbruptDecay";
+import { AdantoVanguardTest } from "../Cards/AdantoVanguard";
+import { GuardianOfNewBenaliaTest } from "../Cards/GuardianOfNewBenalia";
+import { GiantGrowthTest } from "../Cards/GiantGrowth";
+import { AetherfluxReservoirTest } from "../Cards/AetherfluxReservoir";
+import { PreordainTest } from "../Cards/Preordain";
+import { AetherSpellbombTest } from "../Cards/AetherSpellbomb";
+import { AkalPakalFirstAmongEqualsTest } from "../Cards/AkalPakalFirstAmongEquals";
+import { AncestralRecallTest } from "../Cards/AncestralRecall";
+import { SolRingTest } from "../Cards/SolRing";
+import { AncientTombTest } from "../Cards/AncientTomb";
+import { AridMesaTest } from "../Cards/AridMesa";
+import { CombatTest } from "./CombatTest";
+
+const availableTests = [LightningBoltTest, AdelineResplendentCatharTest, CombatTest, BladeSplicerTest, BenevolentBodyguardTest, BirdsofParadiseTest, CatharCommandoTest, SpyglassSirenTest, FaerieMastermindTest, DragonsRageChannelerTest, ConcealingCurtainsTest, SimicSignetTest, GoblinBombardmentTest, DemonicTutorTest, ThoughtseizeTest, WalkingBallistaTest, DescendantofStormsTest, GiverofRunesTest, MotherofRunesTest, OcelotPrideTest, NethergoyfTest, FireIceTest, ToxicDelugeTest, ThaliaGuardianofThrabenTest, GuideofSoulsTest, FloodpitsDrownerTest, StunCounterReplacementTest, DarkConfidantTest, FactorFictionTest, AbradeTest, AbruptDecayTest, AdantoVanguardTest, GuardianOfNewBenaliaTest, GiantGrowthTest, AetherfluxReservoirTest, PreordainTest, AetherSpellbombTest, AkalPakalFirstAmongEqualsTest, AncestralRecallTest, SolRingTest, AncientTombTest, AridMesaTest]
+
+export default availableTests;

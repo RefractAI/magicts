@@ -1,7 +1,7 @@
-import { AddManaEffect } from "../Types/EffectClass";
+import { AddManaEffect } from "../Types/EffectTypes";
 import { PlayerId } from "../Types/IdCounter";
-import { Effect } from "../Types/Types";
-import { EvaluateNumber } from "../Logic/Evaluate";
+import { Effect } from "../Types/EffectTypes";
+import { EvaluateNumber, EvaluateColor } from "../Logic/Evaluate";
 import { PerformAddMana } from "../Logic/MutateBoard";
 
 export const ResolveAddManaEffect = ({source,context}: Effect, {color,amount}: AddManaEffect) => {
@@ -9,7 +9,8 @@ export const ResolveAddManaEffect = ({source,context}: Effect, {color,amount}: A
     const {targets} = context
     targets[0].forEach(target => {
         const calculatedAmount = EvaluateNumber(target, source, amount, context);
-        PerformAddMana(target as PlayerId, color, calculatedAmount);
+        const evaluatedColor = EvaluateColor(target, source, color, context);
+        PerformAddMana(target as PlayerId, evaluatedColor, calculatedAmount);
     });
 
     return true;

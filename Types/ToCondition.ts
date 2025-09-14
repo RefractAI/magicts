@@ -1,57 +1,30 @@
-import { ConditionSpecName } from "./ConditionNames";
-import { ConditionSpecTypes } from "./ConditionTypes";
-import { TribeName, TribeNames } from "./TribeNames";
-import { TargetType, NumberVar, KeywordName, ColorDef, ConditionSpecification, NoneCondition, SelfCondition, ColorNames, Color, KeywordNames, NumberDef, NumberSpecification } from "./Types";
-import { NumberVariableNames, NumberVariableName } from "./VariableNames";
+import { ConditionName, ConditionNames } from "./ConditionNames";
+import { C, NoneCondition, SelfCondition } from "./ConditionHelpers";
+import { TargetType, NumberVar, ConditionSpecification, NumberDef, NumberSpecification, NumberVariableNames, NumberVariableName } from "./ConditionTypes";
 
-
-export const ToCondition = (t: TargetType, min?: NumberVar, max?: NumberVar, data?: NumberVar | TribeName | KeywordName | ColorDef): ConditionSpecification => {
-    var t2: ConditionSpecification;
-    if (min !== undefined && max === undefined) {
-        max = min;
-    }
-    if (typeof t === 'string') {
-        if (t === 'None') {
-            t2 = NoneCondition;
-            return t2;
-        }
-        else if (t == 'Self') {
-            t2 = SelfCondition;
-            return t2;
-        }
-        t2 = ConditionSpecTypes[t]!;
-        if(!t2)
+export const ToCondition = (t: TargetType): ConditionSpecification => {
+    
+    if(typeof t === 'string')
+    {
+        switch(t)
         {
-            throw 'Missing condition - '+t
+            case 'None': return NoneCondition
+            case 'Self': return SelfCondition
+            case 'FriendlyPlayer': return C.All("FriendlyPlayer")
+            case 'OpponentPlayer': return C.All("OpponentPlayer")
+            case 'AllPlayers': return C.All("Player")
+            case 'AnyPlayer': return C.Target("Player")
+            //Should always return All for these, otherwise Any
+            case 'AbilitySource': return C.All("AbilitySource")
+            case 'ContextTarget': return C.All("ContextTarget") 
         }
+        return C.Target(t)
     }
-
-    else {
-        t2 = t;
+    else
+    {
+        return t
     }
-
-    t2.min = ToNumberSpec(min || 0);
-    t2.max = ToNumberSpec(max || 0);
-
-    if (typeof data === 'string') {
-        if (TribeNames.includes(data as TribeName)) {
-            t2.context.tribeVariable = data as TribeName;
-        }
-        else if (ColorNames.includes(data as Color)) {
-            t2.context.colorVariable = data as Color;
-        }
-        else if (KeywordNames.includes(data as KeywordName)) {
-            t2.context.keywordVariable = data as KeywordName;
-        }
-
-    }
-    else if (data) {
-        if (typeof data === 'number' || data.cls === 'NumberSpecification') {
-            t2.context.numberVariable = ToNumberSpec(data || 0);
-        }
-    }
-
-    return t2;
+    
 };
 
 export const ToNumberSpec = (t:NumberVar):NumberDef =>
@@ -64,19 +37,34 @@ export const ToNumberSpec = (t:NumberVar):NumberDef =>
     else if(typeof t === 'string')
     {
         var spec:NumberSpecification = ({cls:'NumberSpecification',conditions:NoneCondition,min:1,max:1})
-        if(t in NumberVariableNames)
+        if(NumberVariableNames.includes(t as NumberVariableName))
         {
             spec.conditions = t as NumberVariableName
         }
+        else if (ConditionNames.includes(t as ConditionName))
+        {
+            spec.conditions = ToCondition(t as ConditionName)
+        }
         else
         {
-            spec.conditions = ToCondition(t as ConditionSpecName)
+            var e = new Error('Missing number spec - '+t)
+            console.error(e.stack)
+            throw e
         }
         return spec
     }
     else
     {
-        return t
+        switch(t.cls)
+        {
+            case 'ConditionSpecification':
+                var spec:NumberSpecification = ({cls:'NumberSpecification',conditions:t,min:1,max:1})
+            return spec
+            case 'NumberSpecification':
+                return t
+            default:
+                throw 'Not implemented'+t
+        }
+        
     }
-    
 }

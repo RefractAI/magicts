@@ -8,6 +8,7 @@ export const CanAttack = (attackerId:CardId):boolean =>
     return attacker.zone === 'Field'
     && IsCreature(attacker) 
     && !attacker.tapped
+    && !attacker.summoningSickness
 }
 
 export const CanBlock = (attackerId:CardId,blockerId:CardId):boolean =>
@@ -18,7 +19,7 @@ export const CanBlock = (attackerId:CardId,blockerId:CardId):boolean =>
     && blocker.zone === 'Field'
     && attacker.controller !== blocker.controller 
     && IsCreature(attacker) 
-    && !attacker.tapped 
+    && attacker.attacking !== undefined // attacker must be attacking to be blocked
     && IsCreature(blocker) 
-    && !blocker.tapped
+    && !blocker.tapped // only blocker needs to be untapped
 }

@@ -1,10 +1,8 @@
-import { AbilityEffect } from "../Types/EffectClass";
-import { Effect } from "../Types/Types";
+import { AbilityEffect } from "../Types/EffectTypes";
+import { Effect } from "../Types/EffectTypes";
 import { GetCard, GetController, NewCard } from "../Logic/GetCard";
-import { ToAbility } from "../Types/AbilityClassHelpers";
+import { ToAbility } from "../Types/AbilityTypes";
 import { newTimestamp } from "../Types/IdCounter";
-import { controller } from "../Network/Server";
-import { AddChangeZoneGameAction } from "../Types/GameActionHelpers";
 
 export const ResolveAbilityEffect = ({source,context}: Effect, {abilities,target}: AbilityEffect) => {
 
@@ -13,23 +11,20 @@ export const ResolveAbilityEffect = ({source,context}: Effect, {abilities,target
 
     if(target.cls === 'NoneCondition')
     {
-        console.log("ExecuteTrigger","WhenYouDo")
-            const ability = abilities[0]
-            const triggeredAbility = NewCard('Ability',GetController(source),'AbilityHolding',timestamp)
-            triggeredAbility.abilitySourceId = source
-            triggeredAbility.abilitySourceSourceIds = [source]
-            triggeredAbility.abilitySourceAbilityId = ability.id
-            controller.cards.push(triggeredAbility)
+        console.log("ExecuteTrigger:","WhenYouDo")
 
-            AddChangeZoneGameAction("Stack",[triggeredAbility.id],source)
+        const ability = abilities[0]
+        NewCard('Ability',GetController(source),'Stack',1,timestamp,undefined,source,[source],ability.id)[0]
+        
         return true;
     }
 
     targets.forEach(target => {
 
         //Now pass the context (populated from parent effect) to the ability
+        //e,g. selectedX from this effect is passed to the ability
         const newAbilities = abilities.map(a => ToAbility(a,source,timestamp,context))
-        GetCard(target).abilityTypes.push(...newAbilities)
+        GetCard(target).printedAbilities.push(...newAbilities)
         
     });
 

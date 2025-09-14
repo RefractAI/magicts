@@ -1,5 +1,5 @@
-import { Effect } from "../Types/Types";
-import { TriggerEffect } from "../Types/EffectClass";
+import { Effect } from "../Types/EffectTypes";
+import { TriggerEffect } from "../Types/EffectTypes";
 import { ExecuteTrigger } from "../Logic/ExecuteTrigger";
 
 export const ResolveTriggerEffect = (effect: Effect, type: TriggerEffect) => {

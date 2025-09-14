@@ -1,6 +1,24 @@
-import { CardName } from "./CardNames";
+import { CardName } from "../Cards/Common/CardNames";
 import { AbilityTypeId, CardId, PlayerId } from "./IdCounter";
-import { ConditionContext, Cost, InputType, Option, ResolutionContext } from "./Types";
+import { ResolutionContext } from "./CardTypes";
+import { Cost } from "./CostTypes";
+
+export type InputName = 'NoneInput'|'CastInput'|'PayInput'|'NumberInput'|'BooleanInput'|'BucketInput'|'ChooseInput'|'CardNameInput'|'PairInput'|'ButtonChooseInput'
+
+export interface InputType
+{
+    name:InputName,
+    prompt:string,
+    response:any,
+    responded:boolean,
+    playerId:PlayerId,
+    purpose:InputKind
+
+    source:CardId, //Player, spell or ability that requires the choice
+    sourceEffectIndex?:number, //For that card, effect that requires card choice
+    contextKey?:keyof ResolutionContext //For that effect, the context key to return the results to
+    contextKeyIndex?:number  //For that context key, the array index to return the results to
+}
 
 export interface NoneInput extends InputType
 {
@@ -14,18 +32,12 @@ export interface CastInput extends InputType
     response:CastSpecification
 }
 
-export interface ModeInput extends InputType
-{
-    name:'ModeInput',
-    modes:Option[][],
-    response:number
-}
-
 export interface CastSpecification
 {
     playerId:PlayerId,
     cardId:CardId|null,
-    abilityTypeId:AbilityTypeId|null
+    abilityTypeId:AbilityTypeId|null,
+    chosenMode?:number // Index of chosen casting option
 }
 
 export interface PayInput extends InputType
@@ -42,7 +54,8 @@ export interface ChooseInput extends InputType
     min:number,
     max:number,
     allowed:CardId[],
-    response:CardId[]
+    response:CardId[],
+    validationFunction?:string
 }
 
 export interface ButtonChooseInput extends InputType
@@ -59,6 +72,9 @@ export interface PairInput extends InputType
     name:'PairInput',
     allowed:CardId[],
     toCards:CardId[],
+    requiredFroms:CardId[], // Cards that must be paired with something
+    requiredTos:CardId[], // Cards that must have something paired with them
+    requiredPairs:[from:CardId,to:CardId][], // Specific pairs that must be included
     response:[from:CardId,to:CardId][]
 }
 
@@ -100,4 +116,4 @@ export interface BucketInput extends InputType
     requiresOrder:boolean
 }
 
-export type InputUnion = NoneInput|CastInput|PayInput|BucketInput|NumberInput|BooleanInput|ChooseInput|CardNameInput|ModeInput|PairInput|ButtonChooseInput
+export type InputUnion = NoneInput|CastInput|PayInput|BucketInput|NumberInput|BooleanInput|ChooseInput|CardNameInput|PairInput|ButtonChooseInput

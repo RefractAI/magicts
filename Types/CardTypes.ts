@@ -1,112 +1,167 @@
-import { CardType, SelfCondition } from "./Types";
-import { ActualCardName, TokenName } from "./CardNames";
-import { Artifact, Creature, Generic, Instant, Land, TokenArtifactCreature, TokenCreature } from "./CardTypesHelpers";
-import { ChooseAnyColor, Create, CreateTappedAndAttacking, Damage, Destroy, Discard, Gains, DoTrigger, Sacrifice, Scry, Tap, TargetGains, WhenYouDo, May } from "./EffectClassHelpers";
-import { ETB, OnAttack } from "./TriggerAbilityHelpers";
-import { GainsPowerUntilEndOfTurn, IndestructibleUntilEndOfTurn, MakeActivatedAbility, MakeProtectionFromAbility, MakeTriggeredAbility, XsYouControlHaveY } from "./AbilityClassHelpers";
-import { IsOfColor } from "./ConditionTypes";
+import { Ability, AbilityClass, AbilityUnion, CastingOptionAbility } from "./AbilityTypes"
+import { ActualCardName, CardName } from "../Cards/Common/CardNames"
+import { Effect, EffectUnion } from "./EffectTypes"
+import { GameActionUnion } from "./GameActionTypes"
+import { AbilityTypeId, CardId, PlayerId, Timestamp } from "./IdCounter"
+import { CastSpecification, InputUnion } from "./InputTypes"
+import { PhaseName } from "./PhaseNames"
+import { TribeName } from "./TribeNames"
+import { ZoneName } from "./ZoneNames"
+import { Cost, PoolManaElement } from "./CostTypes"
+import { KeywordName } from "./KeywordTypes"
+import { CastPhaseName } from "./CastPhaseTypes"
+import { CounterType } from "./CounterTypes"
+import { Color, ColorDef } from "./ColorTypes"
+import { NumberDef } from "./ConditionTypes"
+import { TriggerName } from "./TriggerNames"
 
-export const CardTypes:Record<ActualCardName,CardType> =
+export interface QueuedTriggeredAbility
 {
-  "Bear": Creature("Bear", "1G", 2, 2, "Bear"),
-"Flametongue Kavu": Creature("Flametongue Kavu", "3R", 4, 2, "Kavu"
-//When Flametongue Kavu enters the battlefield, it deals 4 damage to target creature.
-  ,ETB(
-    Damage(4, "AnyCreature")
-  )
-),
-
-"Lightning Bolt": Instant("Lightning Bolt", "R"
-//Lightning Bolt deals 3 damage to any target.
-  ,Damage(3, "AnyTarget")
-),
-
-"Adeline, Resplendent Cathar": Creature("Adeline, Resplendent Cathar", "1WW", 
-////Adeline, Resplendent Cathar's power is equal to the number of creatures you control. 
-  "AllFriendlyCreatures", 3
-  , "Legendary","Human","Knight", 
-//Whenever you attack, for each opponent, create a 1/1 white Human creature token that's tapped and attacking that player or a planeswalker they control.
-  OnAttack("Self", 
-    CreateTappedAndAttacking("11WhiteHuman"))
-),
-
-"Blade Splicer": Creature("Blade Splicer", "2W", 2, 2, "Phyrexian", "Human", "Artificer",
-  //When Blade Splicer enters the battlefield, create a 3/3 colorless Phyrexian Golem artifact creature token. Golems you control have first strike.
-    ETB(
-      Create("33ColorlessPhyrexianGolemArtifactCreature")
-    ),
-  //Golems you control have first strike.
-    XsYouControlHaveY("Golem","FirstStrike")
-),
-
-"Benevolent Bodyguard": Creature("Benevolent Bodyguard", "W", 1, 1, "Human", "Cleric",
-  //Sacrifice Benevolent Bodyguard: Target creature you control gains protection from the color of your choice until end of turn.
-    MakeActivatedAbility(
-      Sacrifice(),
-      ChooseAnyColor("FriendlyPlayer",TargetGains("AnyFriendlyCreature",MakeProtectionFromAbility(IsOfColor("AllOfColor","ChosenColor"))))
-    ) 
-),
-
-"Cathar Commando": Creature("Cathar Commando", "1W", 2, 2, "Human", "Soldier", "Flash",
-//1, Sacrifice Cathar Commando: Destroy target artifact or enchantment.
-  MakeActivatedAbility(
-    Sacrifice(),
-    Destroy("AnyArtifactOrEnchantment")
-  )
-),
-
-"Guardian of New Benalia": Creature(
-  "Guardian of New Benalia",
-  "1W",
-  2,
-  2,
-  "Human",
-  "Soldier",  
-  //Enlist: As this creature attacks, you may tap a nonattacking creature you control without summoning sickness. When you do, add its power to this creature's until end of turn.
-  OnAttack(
-    "Self",
-    May(
-      WhenYouDo(
-      Tap("AnyFriendlyCreatureNotAttackingAndNoSummoningSickness"),
-      GainsPowerUntilEndOfTurn("LinkedEffectTargetPower", SelfCondition),
-      DoTrigger("Enlist")
-      )
-    )
-  ),
-  // Whenever Guardian of New Benalia enlists a creature, scry 2.
-  MakeTriggeredAbility(
-    "Enlist",
-    "AnyFriendlyCreature",
-    Scry(2)
-  ),
-  // Discard a card: Guardian of New Benalia gains indestructible until end of turn. Tap it.
-  MakeActivatedAbility(
-    Discard(1),
-    Gains(IndestructibleUntilEndOfTurn())),
-    Tap()
-),
-
-Plains: Land("Plains", "Plains"),
-Island: Land("Island", "Island"),
-Swamp: Land("Swamp", "Swamp"),
-Mountain: Land("Mountain", "Mountain"),
-Forest: Land("Forest", "Forest"),
-"Gruul Signet": Artifact("Gruul Signet", "2"),
-
-    Player: Generic("Player","Player"),
-    Opponent: Generic("Opponent","Player"),
-    Ability: Generic("Ability","Ability"),
-    Option: Generic("Option","Option"),
+    triggerName: TriggerName,
+    triggerSources: CardId[],
+    controller: PlayerId,
+    sourceCard: CardId,
+    abilityTypeId: AbilityTypeId,
+    timestamp: Timestamp
 }
 
-export const TokenTypes:Record<TokenName,CardType> =
+export interface Controller
 {
-    "11WhiteHuman": TokenCreature("11WhiteHuman", 1, 1, "Human"),
-    "33ColorlessPhyrexianGolemArtifactCreature": TokenArtifactCreature("33ColorlessPhyrexianGolemArtifactCreature", 3, 3, "Phyrexian","Golem"),
+    cards:(Card | Player)[],
+    active:PlayerId,
+    active2:PlayerId,
+    activePlayerPassed:boolean, // Whether the active player has passed priority
+    nonActivePlayerPassed:boolean, // Whether the non-active player has passed priority
+    phase:PhaseName,
+    turnNumber:number,
+    input?:InputUnion,
+    stack:CardId[],
+    fastStack:CardId[],
+    actions:GameActionUnion[],
+    currentTest?:ActualCardName,
+    autoTapLoopCount:number,
+    triggeredAbilityQueue:QueuedTriggeredAbility[], // Triggered abilities waiting to be put on stack
 }
 
-/*
-        //todo: colorchoiceeffect gets
-        //passes to lower effect
-        //color var of chosencolor to pick up that
-        //ChosenColor = pick up from parent effect context -> ability effect context -> ability context -> condition context*/
+export interface CardType
+{
+    name:CardName,
+    cost:Cost,
+    abilities:AbilityUnion[], //i.e. innate on the card,
+    effects:EffectUnion[],
+    cls:'CardType'
+}
+
+export type Clause = AbilityUnion | EffectUnion | TribeName | KeywordName
+
+export interface ResolutionContext
+{
+    targets:CardId[][],
+    linkedTargets?:CardId[][],
+    illegalTargets?:CardId[][]
+
+    discardTargetIds?:CardId[][],
+    sacrificeTargetIds?:CardId[][],
+    searchTargetIds?:CardId[][],
+    mayInput?:boolean,
+    booleanChoice?:boolean,
+    buttonChoice?:string,
+    bucketResponse?:CardId[][],
+    bucketTargetIds?:Record<string, CardId[]>,
+    chosenColor?:Color,
+    chosenTargets?:CardId[],
+    exploreChoice?:boolean,
+    surveilChoice?:boolean,
+    selectedX?:number,
+    
+}
+
+export interface ConditionContext
+{
+    numberVariable?:NumberDef,
+    tribeVariable?:TribeName,
+    colorVariable?:ColorDef,
+    keywordVariable?:KeywordName,
+    cardNameVariable?:CardName,
+    zoneVariable?:ZoneName,
+    stringVariable?:string,
+} 
+
+export interface ConditionConcreteContext extends ResolutionContext
+{
+    numberVariable?:number,
+    stringVariable?:string,
+    tribeVariable?:TribeName,
+    colorVariable?:Color,
+    keywordVariable?:KeywordName,
+    zoneVariable?:ZoneName,
+    abilityVariable?:AbilityClass,
+    cardNameVariable?:CardName,
+} 
+
+export interface Card
+{
+    id:CardId,
+    controller:PlayerId
+    originalName:CardName,
+    name:CardName,
+    abilitySourceId?:CardId,
+    abilitySourceSourceIds?:CardId[],
+    abilitySourceAbilityId?:AbilityTypeId
+
+    zone:ZoneName,
+    previousZone:ZoneName
+    tapped:boolean,
+    revealed:boolean,
+    counters:CounterType[],
+    damageMarked:number,
+    attacking?:CardId,
+    blockOrder:CardId[],
+    blocking:CardId[],
+    printedAbilities:Ability[], //i.e. permanently on this from the card type (reset on zone change or name change) and from other sources (e.g. +2/+2 until end of turn)
+    timestamp:Timestamp,
+    summoningSickness:boolean
+    enteredThisTurn:boolean
+
+    castPhase:CastPhaseName,
+    castSelectedAbilities:AbilityUnion[],
+    castSelectedEffects:EffectUnion[],
+    castSelectedX:number,
+    castSelectedCost:Cost,
+    castSelectedName:CardName,
+    selectedOptions:CastingOptionAbility[],
+    effects:Effect[],
+
+    //derived
+    abilities:Ability[], //CALCULATED temp abilities from the printedAbilities or auras from other cards, then sorted below (except activated/triggered)
+    keywords:KeywordName[],
+    canCast:CastSpecification[]
+    options:CastingOptionAbility[][], //CALCULATED valid casting option combinations (empty array means normal cast only)
+    power:number,
+    toughness:number,
+    tribes:TribeName[],
+    colors:Color[],
+    cmc:number,
+    cost:Cost,
+
+    cls:'Card'
+}
+
+export interface Player extends Card
+{
+    id:PlayerId,
+    controller:PlayerId
+    name:'Player'|'Opponent',
+
+    zone:'Player'
+
+    life:number,
+    library:CardId[],
+    manaPool:PoolManaElement[]
+
+    cardsDrawnThisTurn:number,
+    spellsCastThisTurn:number,
+    gainedLifeThisTurn:number,
+    lostLifeThisTurn:number,
+    cardsEnteredThisTurn:CardId[],
+}

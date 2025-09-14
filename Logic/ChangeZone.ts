@@ -1,17 +1,24 @@
 import { controller } from "../Network/Server";
 import { ChangeZoneAction } from "../Types/GameActionTypes";
 import { GetCardTitle } from "../Types/GetText";
-import { PlayerId, newTimestamp } from "../Types/IdCounter";
-import { Card } from "../Types/Types";
+import { CardId, PlayerId, newTimestamp } from "../Types/IdCounter";
+import { Card } from "../Types/CardTypes";
 import { ZoneName } from "../Types/ZoneNames";
-import { ClearCastState, ClearFieldState } from "./ClearState";
+import { ClearCardZoneState } from "./ClearState";
 import { EvaluateNumber } from "./Evaluate";
 import { ExecuteTrigger } from "./ExecuteTrigger";
-import { GetCards, GetPlayer } from "./GetCard";
+import { GetCards, GetPlayer, GetCardType, GetCard } from "./GetCard";
+import { ToAbility, GetAbilityType } from "../Types/AbilityTypes";
+import { CalculateAbilities } from "./CalculateAbilities";
+import { HandleCardNameChange } from "./NameChange";
+import { EntersWithCountersAbility } from "../Types/AbilityTypes";
+import { PerformAddCounter } from "./MutateBoard";
+import { GetAbilitiesAndEffectsFromCastingOption } from "../Types/OptionTypes";
+import { EmptyCost } from "../Types/CostTypes";
 
 export const ChangeZone = (action:ChangeZoneAction) =>
 {
-    const {cardIds,zoneTo,source} = action
+    const {cardIds,zoneTo,source,reason} = action
     const cards = GetCards(cardIds)
 
       const grouped = groupCardsByZoneAndPlayerId(cards)
@@ -21,7 +28,7 @@ export const ChangeZone = (action:ChangeZoneAction) =>
 
         if(zoneFrom === zoneTo)
         {
-            console.log("Same Zone")
+            console.log(`Attempting to change ${zoneCards.map(c => GetCardTitle(c)).join(",")} zone to same zone: ${zoneFrom} to ${zoneTo}`)
             return;
         }
 
@@ -29,10 +36,6 @@ export const ChangeZone = (action:ChangeZoneAction) =>
 
         switch(zoneFrom)
         {
-            case 'Field':
-                //Remove permanent info?
-                zoneCardIds.forEach(zci => ClearFieldState(zci))
-                break;
             case 'Stack':
                 controller.stack = controller.stack.filter(s => !zoneCardIds.includes(s))
                 break;
@@ -48,11 +51,9 @@ export const ChangeZone = (action:ChangeZoneAction) =>
         switch(zoneTo)
         {
             case 'Stack':
-                zoneCardIds.forEach(zci => ClearCastState(zci))
                 controller.stack.unshift(...zoneCardIds); 
                 break;
             case 'FastStack':
-                zoneCardIds.forEach(zci => ClearCastState(zci))
                 controller.fastStack.push(...zoneCardIds); 
                 break;
             case 'Library':
@@ -79,27 +80,118 @@ export const ChangeZone = (action:ChangeZoneAction) =>
         switch(zoneFrom)
         {
             case 'Field': ExecuteTrigger("LTB",zoneCardIds); break;
+            break;
         }
 
-        //Enter Triggers
+        const timestamp = newTimestamp()
+
+        console.log(`ChangeZone: ${zoneCards.map(c => GetCardTitle(c)).join(",")} from ${zoneFrom} to ${zoneTo}. Reason: (${reason})`)
+        zoneCards.forEach(c => {
+            c.timestamp = timestamp
+            c.previousZone = zoneFrom
+            c.zone = zoneTo
+            c.enteredThisTurn = true // Mark that this card entered a zone this turn
+
+            //Clear all state from the card
+            ClearCardZoneState(c.id)
+
+            if (zoneTo === 'Stack')
+            {
+                ClearCardCastState(c.id)
+                // Centralize cast selections:
+                if (c.name === 'Ability') {
+                    // Ability card: base from ability definition
+                    const abilityCardType = GetCardType(c.id)
+                    c.castSelectedAbilities = abilityCardType.abilities
+                    c.castSelectedEffects = abilityCardType.effects
+                    c.castSelectedName = 'Ability' as any
+                    c.castSelectedCost = abilityCardType.cost
+                } else {
+                    // Spell card: start from its base card definition
+                    const baseType = GetCardType(c.id)
+                    let abilities = baseType.abilities
+                    let effects = baseType.effects
+                    let name: any = c.name
+                    let cost = baseType.cost
+
+                    // If selectedOptions exist (alternate/transform/split), override from options
+                    if (c.selectedOptions && c.selectedOptions.length > 0) {
+                        const merged = c.selectedOptions.map(o => GetAbilitiesAndEffectsFromCastingOption(o))
+                        abilities = merged.flatMap(m => m.abilities)
+                        effects = merged.flatMap(m => m.effects)
+                        // name: last provided name wins if any option specifies
+                        const withName = merged.find(m => m.name)
+                        if (withName && withName.name) {
+                            name = withName.name
+                        }
+                        // cost: use first option's cost if provided (e.g., AlternateCost)
+                        const costOpt = c.selectedOptions.find(o => o.cost)
+                        if (costOpt && costOpt.cost) {
+                            cost = costOpt.cost
+                        }
+                    }
+
+                    c.castSelectedAbilities = abilities
+                    c.castSelectedEffects = effects
+                    c.castSelectedName = name
+                    c.castSelectedCost = cost
+                }
+
+                // Apply selected name to the card when it hits the stack
+                c.name = c.castSelectedName
+                HandleCardNameChange(c.id,c.name)
+            }
+            else if (zoneFrom === 'Stack' && zoneTo === 'Field')
+            {
+                //Apply selected options from CastInfo when resolving from stack
+                c.name = c.castSelectedName
+                c.cost = c.castSelectedCost
+                c.printedAbilities = c.castSelectedAbilities.map(a => ToAbility(a,c.id,c.timestamp,{targets:[]}))
+            }
+            else 
+            {
+                HandleCardNameChange(c.id,c.name)
+            }
+
+        })
+
+        //Now that all new cards have their base abilities, calculate all abilities
+        //Potentially move trigger execution to its own GameAction
+        CalculateAbilities()
+
+        //Apply EntersWithCounters abilities for cards entering the field
+        if(zoneTo === 'Field') {
+            zoneCardIds.forEach(cardId => {
+                const card = GetCards([cardId])[0];
+                card.printedAbilities.forEach(ability => {
+                    const abilityType = GetAbilityType(ability.type);
+                    if(abilityType.abilityCls === 'EntersWithCountersAbility') {
+                        const entersWithCountersAbility = abilityType as EntersWithCountersAbility;
+                        const amount = EvaluateNumber(card, card, entersWithCountersAbility.amount, {targets:[]});
+                        for(let i = 0; i < amount; i++) {
+                            PerformAddCounter(cardId, entersWithCountersAbility.counterType);
+                        }
+                    }
+                });
+            });
+        }
+
+        //Track cards entering the battlefield
+        if(zoneTo === 'Field') {
+            zoneCardIds.forEach(cardId => {
+                const card = GetCard(cardId);
+                const player = GetPlayer(card.controller);
+                if(!player.cardsEnteredThisTurn.includes(cardId)) {
+                    player.cardsEnteredThisTurn.push(cardId);
+                }
+            });
+        }
+
+        //Enter Triggers - moved after abilities are applied
         switch(zoneTo)
         {
             case 'Field': ExecuteTrigger("ETB",zoneCardIds); break;
         }
-
-        if(zoneFrom !== 'AbilityHolding' && zoneFrom !== 'TokenHolding')
-        {
-            const timestamp = newTimestamp()
-            zoneCards.forEach(c => {
-                c.timestamp = timestamp
-            })
-        }
-        
-        console.log(`ChangeZone: ${zoneCards.map(c => GetCardTitle(c)).join(",")} from ${zoneFrom} to ${zoneTo}`)
-        zoneCards.forEach(c => {
-            c.previousZone = zoneFrom
-            c.zone = zoneTo
-        })
 
     })
 }
@@ -124,3 +216,13 @@ const groupCardsByZoneAndPlayerId = (cards: Card[]) => {
       ([_, value]) => value
     );
   };
+
+const ClearCardCastState = (id: CardId) =>
+{
+    const card = GetCard(id)
+    card.castSelectedAbilities = []
+    card.castSelectedEffects = []
+    card.castSelectedName = card.originalName
+    card.castSelectedCost = EmptyCost
+}
+
